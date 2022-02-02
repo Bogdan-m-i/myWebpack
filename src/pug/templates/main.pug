@@ -1,0 +1,11 @@
+block variables
+
+doctype html
+html(lang='ru')
+    head
+        link(type="image/x-icon" rel="shortcut icon" href="/img/favicon.ico")
+        title #{title}
+        meta(name="description" content=`${description}`)
+
+    body
+        block content
