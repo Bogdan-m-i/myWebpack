@@ -3,7 +3,7 @@ import cat from '@/assets/img/cat.jpg';
 import '@/style/style.scss';
 
 document.addEventListener('DOMContentLoaded', () => {
-  fetch('./json/main.json')
+  fetch('assets/json/main.json')
     .then((res) => res.json())
     .then((res) => console.log(res));
 

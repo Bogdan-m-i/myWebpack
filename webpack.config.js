@@ -102,6 +102,9 @@ module.exports = {
     // Спрайт
     new SpriteLoaderPlugin({
       plainSprite: true,
+      spriteAttrs: {
+        fill: '',
+      },
     }),
 
     // html
@@ -142,6 +145,19 @@ module.exports = {
             options: {
               extract: true,
               spriteFilename: './assets/img/icons/sprite.svg',
+            },
+          },
+          {
+            loader: 'svgo-loader',
+            options: {
+              plugins: [
+                {
+                  name: 'removeAttrs',
+                  params: {
+                    attrs: '(fill|stroke)',
+                  },
+                },
+              ],
             },
           },
         ],
