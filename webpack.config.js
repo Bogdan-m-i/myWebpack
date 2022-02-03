@@ -10,11 +10,13 @@ const ImageMinimizerPlugin = require('image-minimizer-webpack-plugin');
 const posthtml = require('posthtml');
 const posthtmlWebp = require('posthtml-webp');
 const posthtmlReplace = require('posthtml-replace');
+const SpriteLoaderPlugin = require('svg-sprite-loader/plugin');
+const CopyPlugin = require('copy-webpack-plugin');
 
 const SRC = path.resolve(__dirname, 'src');
 const DIST = path.resolve(__dirname, 'dist');
 
-const PAGES_DIR = `${SRC}/pug/pages`;
+const PAGES_DIR = `${SRC}/pages`;
 const PAGES = fs.readdirSync(PAGES_DIR).filter((fileName) => fileName.endsWith('.pug'));
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -62,10 +64,10 @@ const optimization = () => {
 
 module.exports = {
   context: SRC,
+  target: 'web',
   mode: process.env.NODE_ENV,
   entry: {
     index: ['@babel/polyfill', './index.js'],
-    script: './script.js',
   },
   output: {
     filename: '[name].[contenthash].js',
@@ -90,6 +92,18 @@ module.exports = {
     // Удалет старый /dist
     new CleanWebpackPlugin(),
 
+    // Копирование файлов
+    new CopyPlugin({
+      patterns: [
+        { from: 'assets/json', to: 'assets/json' },
+      ],
+    }),
+
+    // Спрайт
+    new SpriteLoaderPlugin({
+      plainSprite: true,
+    }),
+
     // html
     ...PAGES.map((page) => new HtmlWebpackPlugin({
       template: `${PAGES_DIR}/${page}`,
@@ -113,18 +127,32 @@ module.exports = {
     // eslint
     new ESLintPlugin({
       extensions: ['js'],
+      // fix: true,
     }),
 
   ],
   module: {
     rules: [
 
+      {
+        test: /\.svg$/,
+        use: [
+          {
+            loader: 'svg-sprite-loader',
+            options: {
+              extract: true,
+              spriteFilename: './assets/img/icons/sprite.svg',
+            },
+          },
+        ],
+      },
+
       { test: /\.css$/, use: [MiniCssExtractPlugin.loader, 'css-loader'] },
 
       { test: /\.s[ac]ss$/, use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'] },
 
       {
-        test: /\.(png|jpe?g|gif|webp|ico|svg)$/,
+        test: /\.(png|jpe?g|gif|webp|ico)$/,
         type: 'asset/resource',
       },
 
@@ -147,6 +175,14 @@ module.exports = {
             loader: 'html-loader',
             options: {
               minimize: false,
+              sources: {
+                // Фильтруем загрузку ресуров
+                // Пропускаем где в пути есть sprite.svg - т.к. он появляется только в dist
+                urlFilter: (attr, val) => {
+                  if (/sprite\.svg/.test(val)) return false;
+                  return true;
+                },
+              },
               preprocessor: (content, loaderContext) => {
                 let result;
 
