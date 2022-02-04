@@ -138,7 +138,7 @@ module.exports = {
     rules: [
 
       {
-        test: /\.svg$/,
+        test: /icons.*\.svg$/,
         use: [
           {
             loader: 'svg-sprite-loader',
@@ -163,14 +163,19 @@ module.exports = {
         ],
       },
 
-      { test: /\.css$/, use: [MiniCssExtractPlugin.loader, 'css-loader'] },
-
-      { test: /\.s[ac]ss$/, use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'] },
+      {
+        test: /svg.*\.svg$/,
+        type: 'asset/resource',
+      },
 
       {
         test: /\.(png|jpe?g|gif|webp|ico)$/,
         type: 'asset/resource',
       },
+
+      { test: /\.css$/, use: [MiniCssExtractPlugin.loader, 'css-loader'] },
+
+      { test: /\.s[ac]ss$/, use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'] },
 
       {
         test: /\.m?js$/,
