@@ -70,13 +70,12 @@ module.exports = {
     index: ['@babel/polyfill', './index.js'],
   },
   output: {
-    filename: '[name].[contenthash].js',
+    filename: isDev ? '[name].js' : '[name].[contenthash].js',
     path: DIST,
     assetModuleFilename: '[path][name][ext]',
   },
   resolve: {
-    // Массив расширений которые можно будет не указывать в import
-    extensions: ['.js'],
+    extensions: ['.js', '.scss'],
     alias: {
       '@': SRC,
     },
@@ -124,7 +123,8 @@ module.exports = {
 
     // Обработка css - собирает все в один файл
     new MiniCssExtractPlugin({
-      filename: './css/[name].[contenthash].css',
+      filename: isDev ? './css/[name].css' : './css/[name].[contenthash].css',
+      chunkFilename: isDev ? './css/[id].css' : './css/[id].[contenthash].css',
     }),
 
     // eslint

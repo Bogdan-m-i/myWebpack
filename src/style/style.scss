@@ -1,6 +1,5 @@
 @import "~normalize.css";
-
-@import "../components/components";
+@import "~@/components/components";
 
 @font-face {
   font-family: 'Roboto';
@@ -13,8 +12,4 @@ html {
   h1 {
     color: cyan;
   }
-}
-
-.test {
-  width: 200px;
 }

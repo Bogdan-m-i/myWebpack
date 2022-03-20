@@ -5,8 +5,7 @@ block variables
     - const description = 'Описание главной страницы'
 
 block content
-    h1 test pug
+    h1 1 Task. Canvas.
 
-    img(src="/assets/img/c.jpg").test
-
-    +icon('add')
+    canvas#stars(style="width: 600px; height: 600px;")
+    canvas#result(style="width: 600px; height: 50px;")
