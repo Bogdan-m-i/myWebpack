@@ -143,53 +143,7 @@ module.exports = {
     open: true,
   },
   devtool: isDev ? 'source-map' : false,
-  plugins: [
-
-    // Удалет старый /dist
-    new CleanWebpackPlugin(),
-
-    // Копирование файлов
-    new CopyPlugin({
-      patterns: [
-        { from: 'assets/json', to: 'assets/json' },
-      ],
-    }),
-
-    // Спрайт
-    new SpriteLoaderPlugin({
-      plainSprite: true,
-      spriteAttrs: {
-        fill: '',
-      },
-    }),
-
-    // html
-    ...PAGES.map((page) => new HtmlWebpackPlugin({
-      template: `${PAGES_DIR}/${page}`,
-      filename: `./${page.replace(/\.pug/, '.html')}`,
-      minify: {
-        collapseWhitespace: false,
-        keepClosingSlash: true,
-        removeComments: true,
-        removeRedundantAttributes: true,
-        removeScriptTypeAttributes: true,
-        removeStyleLinkTypeAttributes: true,
-        useShortDoctype: true,
-      },
-    })),
-
-    // Обработка css - собирает все в один файл
-    new MiniCssExtractPlugin({
-      filename: isDev ? './css/[name].css' : './css/[name].[contenthash].css',
-    }),
-
-    // eslint
-    new ESLintPlugin({
-      extensions: ['js'],
-      // fix: true,
-    }),
-
-  ],
+  plugins,
   module: {
     rules: [
 
@@ -297,7 +251,9 @@ module.exports = {
                   result = posthtml([
                     // Делаем из img -> picture
                     // img(src=*.jpg) -> picture [ source(srcset=*.jpg.webp) img(src=*.jpg) ]
-                    posthtmlWebp(),
+                    posthtmlWebp({
+                      extensionIgnore: ['svg'],
+                    }),,
                     // Чтоб правильно конвертировались картинки в webp нужно передать ?as=webp
                     posthtmlReplace([
                       {
