@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
@@ -13,15 +14,69 @@ const posthtmlReplace = require('posthtml-replace');
 const SpriteLoaderPlugin = require('svg-sprite-loader/plugin');
 const CopyPlugin = require('copy-webpack-plugin');
 
+// КОНСТАНТЫ
 const SRC = path.resolve(__dirname, 'src');
 const DIST = path.resolve(__dirname, 'dist');
 
 const PAGES_DIR = `${SRC}/pages`;
-const PAGES = fs.readdirSync(PAGES_DIR).filter((fileName) => fileName.endsWith('.pug'));
+const PAGES = fs.readdirSync(PAGES_DIR).filter((fileName) => fileName.endsWith('.pug') && !fileName.startsWith('_'));
 
 const isDev = process.env.NODE_ENV === 'development';
 const isProd = !isDev;
 
+// ПЛАГИНЫ
+const plugins = [
+
+  // Удалет старый /dist
+  new CleanWebpackPlugin(),
+
+  // Копирование файлов
+  new CopyPlugin({
+    patterns: [
+      { from: 'assets/json', to: 'assets/json' },
+    ],
+  }),
+
+  // Спрайт
+  new SpriteLoaderPlugin({
+    plainSprite: true,
+    spriteAttrs: {
+      fill: '',
+    },
+  }),
+
+  // html
+  ...PAGES.map((page) => new HtmlWebpackPlugin({
+    template: `${PAGES_DIR}/${page}`,
+    filename: `./${page.replace(/\.pug/, '.html')}`,
+    minify: {
+      collapseWhitespace: false,
+      keepClosingSlash: true,
+      removeComments: true,
+      removeRedundantAttributes: true,
+      removeScriptTypeAttributes: true,
+      removeStyleLinkTypeAttributes: true,
+      useShortDoctype: true,
+    },
+  })),
+
+  // Обработка css - собирает все в один файл
+  new MiniCssExtractPlugin({
+    filename: isDev ? './css/[name].css' : './css/[name].[contenthash].css',
+    chunkFilename: isDev ? './css/[id].css' : './css/[id].[contenthash].css',
+  }),
+
+  // eslint
+  new ESLintPlugin({
+    extensions: ['js'],
+    // fix: true,
+  }),
+
+];
+
+if (isDev) plugins.push(new webpack.HotModuleReplacementPlugin());
+
+// КОНФИГ ОПТИМИЗАЦИИ
 const optimization = () => {
   const config = {
     splitChunks: { chunks: 'all' },
@@ -64,7 +119,7 @@ const optimization = () => {
 
 module.exports = {
   context: SRC,
-  target: 'web',
+  target: isDev ? 'web' : 'browserslist',
   mode: process.env.NODE_ENV,
   entry: {
     index: ['@babel/polyfill', './index.js'],
@@ -75,7 +130,8 @@ module.exports = {
     assetModuleFilename: '[path][name][ext]',
   },
   resolve: {
-    extensions: ['.js', '.scss'],
+    // Массив расширений которые можно будет не указывать в import
+    // extensions: ['.js', '.scss', '.pug'],
     alias: {
       '@': SRC,
     },
@@ -84,6 +140,7 @@ module.exports = {
   devServer: {
     port: 666,
     watchFiles: `${SRC}/**/*.pug`,
+    open: true,
   },
   devtool: isDev ? 'source-map' : false,
   plugins: [
@@ -124,7 +181,6 @@ module.exports = {
     // Обработка css - собирает все в один файл
     new MiniCssExtractPlugin({
       filename: isDev ? './css/[name].css' : './css/[name].[contenthash].css',
-      chunkFilename: isDev ? './css/[id].css' : './css/[id].[contenthash].css',
     }),
 
     // eslint
@@ -175,7 +231,22 @@ module.exports = {
 
       { test: /\.css$/, use: [MiniCssExtractPlugin.loader, 'css-loader'] },
 
-      { test: /\.s[ac]ss$/, use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'] },
+      {
+        test: /\.s(a|c)ss$/,
+        use: [
+          { loader: MiniCssExtractPlugin.loader },
+          { loader: 'css-loader' },
+          {
+            loader: 'postcss-loader',
+            options: {
+              postcssOptions: {
+                plugins: ['autoprefixer'],
+              },
+            },
+          },
+          'sass-loader',
+        ],
+      },
 
       {
         test: /\.m?js$/,
@@ -197,6 +268,21 @@ module.exports = {
             options: {
               minimize: false,
               sources: {
+                list: [
+                  // default values
+                  '...',
+                  // Загрузка ресуросов <a href=...> если есть атрибут data-fancybox
+                  {
+                    tag: 'a',
+                    attribute: 'href',
+                    type: 'src',
+                    filter: (tag, attribute, attributes) => {
+                      const isFancybox = attributes.find((el) => el.name === 'data-fancybox');
+                      if (isFancybox) return true;
+                      return false;
+                    },
+                  },
+                ],
                 // Фильтруем загрузку ресуров
                 // Пропускаем где в пути есть sprite.svg - т.к. он появляется только в dist
                 urlFilter: (attr, val) => {
@@ -216,7 +302,14 @@ module.exports = {
                     posthtmlReplace([
                       {
                         match: { tag: 'source' },
-                        attrs: { srcset: { from: '.webp', to: '?as=webp' } },
+                        attrs: {
+                          srcset: (attr, node) => {
+                            if (attr) {
+                              return node.attrs.srcset.replace('.webp', '?as=webp');
+                            }
+                            return null;
+                          },
+                        },
                       },
                     ]),
                   ])
