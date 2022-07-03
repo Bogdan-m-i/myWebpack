@@ -179,8 +179,13 @@ module.exports = {
       },
 
       {
-        test: /\.(png|jpe?g|gif|webp|ico)$/,
+        test: /\.(png|jpe?g|gif|webp|ico|mp4)$/,
         type: 'asset/resource',
+      },
+
+      {
+        test: /\.(ttf|woff|woff2)$/i,
+        type: 'asset/inline',
       },
 
       { test: /\.css$/, use: [MiniCssExtractPlugin.loader, 'css-loader'] },
